@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from services.auth_service import register_student, login, get_all_students
 
 from services.lost_item_service import (
@@ -50,6 +52,12 @@ def student_menu(user):
             location = input("Enter Lost Location: ")
             date = input("Enter Lost Date (YYYY-MM-DD): ")
 
+            try:
+                datetime.strptime(date, "%Y-%m-%d")
+            except ValueError:
+                print("Invalid date format. Please use YYYY-MM-DD.")
+                continue
+
             lost_item = report_lost_item(
                 user.get_user_id(),
                 item_name,
@@ -59,8 +67,14 @@ def student_menu(user):
                 date
             )
 
-            print("\nLost Item Reported Successfully")
-            print("Lost ID:", lost_item.get_lost_id())
+            if isinstance(lost_item, str):
+
+                print(lost_item)
+
+            else:
+
+                print("\nLost Item Reported Successfully")
+                print("Lost ID:", lost_item.get_lost_id())
 
         # --------------------------------------------------
         # 2. REPORT FOUND ITEM
@@ -97,6 +111,13 @@ def student_menu(user):
 
                 lost_id = input("\nEnter Lost ID: ")
                 found_date = input("Enter Found Date (YYYY-MM-DD): ")
+
+                try:
+                    datetime.strptime(found_date, "%Y-%m-%d")
+                except ValueError:
+                    print("Invalid date format. Please use YYYY-MM-DD.")
+                    continue
+
                 found_location = input("Enter Found Location: ")
 
                 result = report_found_item(
