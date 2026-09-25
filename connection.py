@@ -61,7 +61,7 @@ try:
             category VARCHAR(50),
             description TEXT,
             location VARCHAR(100),
-            date VARCHAR(20),
+            date DATE,
             status VARCHAR(20)
         )
     """)
@@ -71,7 +71,7 @@ try:
             found_id VARCHAR(10) PRIMARY KEY,
             lost_id VARCHAR(10),
             finder_user_id VARCHAR(10),
-            found_date VARCHAR(20),
+            found_date DATE,
             found_location VARCHAR(100),
             status VARCHAR(20)
         )
