@@ -1,32 +1,53 @@
-import csv
-import os
+import mysql.connector as SQLC
+
+from connection import db_config
 
 from models.found_item import FoundItem
-from services.lost_item_service import get_lost_items, update_lost_item_status, get_lost_item_by_id
+
+from services.lost_item_service import (
+    get_lost_items,
+    update_lost_item_status,
+    get_lost_item_by_id
+)
+
 from services.auth_service import get_user_by_id
 
 
 def generate_found_id():
-    file_path = "data/found_items.csv"
 
-    if not os.path.exists(file_path):
+    query = """
+        SELECT found_id
+        FROM found_items
+        ORDER BY found_id DESC
+        LIMIT 1
+    """
+
+    try:
+        cursor = db_config.cursor()
+        cursor.execute(query)
+        result = cursor.fetchone()
+        cursor.close()
+
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return None
+
+    if result is None:
         return "F001"
 
-    with open(file_path, "r", newline="") as file:
-        reader = csv.DictReader(file)
-        items = list(reader)
+    last_id = result[0]
+    number = int(last_id[1:])
 
-    return f"F{len(items) + 1:03d}"
+    return f"F{number + 1:03d}"
 
 
 def find_lost_item(lost_id):
-    lost_items = get_lost_items()
-    for item in lost_items:
-        if item.get_lost_id() == lost_id: return item
-    return None
+
+    return get_lost_item_by_id(lost_id)
 
 
 def report_found_item(lost_id, finder_user_id, found_date, found_location):
+
     lost_item = find_lost_item(lost_id)
 
     if lost_item is None:
@@ -36,52 +57,95 @@ def report_found_item(lost_id, finder_user_id, found_date, found_location):
         return "This Item Is No Longer Available"
 
     found_id = generate_found_id()
-    found_item = FoundItem(found_id, lost_id, finder_user_id, found_date, found_location, "FOUND")
 
-    with open("data/found_items.csv", "a", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow([
-            found_item.get_found_id(),
-            found_item.get_lost_id(),
-            found_item.get_finder_user_id(),
-            found_item.get_found_date(),
-            found_item.get_found_location(),
-            found_item.get_status()
-        ])
+    if found_id is None:
+        return "Database Error: Could Not Generate Found ID"
+
+    found_item = FoundItem(
+        found_id,
+        lost_id,
+        finder_user_id,
+        found_date,
+        found_location,
+        "FOUND"
+    )
+
+    query = """
+        INSERT INTO found_items
+        (found_id, lost_id, finder_user_id, found_date, found_location, status)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+
+    try:
+        cursor = db_config.cursor()
+
+        cursor.execute(
+            query,
+            (
+                found_item.get_found_id(),
+                found_item.get_lost_id(),
+                found_item.get_finder_user_id(),
+                found_item.get_found_date(),
+                found_item.get_found_location(),
+                found_item.get_status()
+            )
+        )
+
+        db_config.commit()
+        cursor.close()
+
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return "Database Error: Could Not Report Found Item"
 
     update_lost_item_status(lost_id, "FOUND")
+
     return found_item
 
 
 def get_found_items():
-    found_items = []
+
+    query = """
+        SELECT found_id, lost_id, finder_user_id,
+               found_date, found_location, status
+        FROM found_items
+    """
 
     try:
-        with open("data/found_items.csv", "r", newline="") as file:
-            reader = csv.DictReader(file)
+        cursor = db_config.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        cursor.close()
 
-            for row in reader:
-                found_item = FoundItem(
-                    row["found_id"],
-                    row["lost_id"],
-                    row["finder_user_id"],
-                    row["found_date"],
-                    row["found_location"],
-                    row["status"]
-                )
-                found_items.append(found_item)
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return []
 
-    except FileNotFoundError:
-        print("Found items data file not found")
+    found_items = []
+
+    for row in rows:
+
+        found_item = FoundItem(
+            row[0],
+            row[1],
+            row[2],
+            row[3],
+            row[4],
+            row[5]
+        )
+
+        found_items.append(found_item)
 
     return found_items
 
 
 def display_found_items(found_items):
+
     if len(found_items) == 0:
         return False
 
     for item in found_items:
+
         print("\n" + "-" * 45)
         print("Found ID       :", item.get_found_id())
         print("Lost ID        :", item.get_lost_id())
@@ -95,60 +159,108 @@ def display_found_items(found_items):
 
 
 def get_my_found_items(user_id):
-    found_items = get_found_items()
-    my_items = []
 
-    for item in found_items:
-        if item.get_finder_user_id() == user_id:
-            my_items.append(item)
+    query = """
+        SELECT found_id, lost_id, finder_user_id,
+               found_date, found_location, status
+        FROM found_items
+        WHERE finder_user_id = %s
+    """
 
-    return my_items
+    try:
+        cursor = db_config.cursor()
+        cursor.execute(query, (user_id,))
+        rows = cursor.fetchall()
+        cursor.close()
+
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return []
+
+    found_items = []
+
+    for row in rows:
+
+        found_item = FoundItem(
+            row[0],
+            row[1],
+            row[2],
+            row[3],
+            row[4],
+            row[5]
+        )
+
+        found_items.append(found_item)
+
+    return found_items
 
 
 def get_found_item_by_id(found_id):
-    found_items = get_found_items()
-    for item in found_items:
-        if item.get_found_id() == found_id: return item
-    return None
+
+    query = """
+        SELECT found_id, lost_id, finder_user_id,
+               found_date, found_location, status
+        FROM found_items
+        WHERE found_id = %s
+    """
+
+    try:
+        cursor = db_config.cursor()
+        cursor.execute(query, (found_id,))
+        row = cursor.fetchone()
+        cursor.close()
+
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return None
+
+    if row is None:
+        return None
+
+    found_item = FoundItem(
+        row[0],
+        row[1],
+        row[2],
+        row[3],
+        row[4],
+        row[5]
+    )
+
+    return found_item
 
 
 def update_found_item_status(found_id, status):
-    found_items = get_found_items()
-    found = False
 
-    for item in found_items:
-        if item.get_found_id() == found_id:
-            item.set_status(status)
-            found = True
-            break
+    query = """
+        UPDATE found_items
+        SET status = %s
+        WHERE found_id = %s
+    """
 
-    if not found:
+    try:
+        cursor = db_config.cursor()
+        cursor.execute(query, (status, found_id))
+        db_config.commit()
+        updated = cursor.rowcount > 0
+        cursor.close()
+
+    except SQLC.Error as err:
+        print("Database Error:", err)
         return False
 
-    with open("data/found_items.csv", "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["found_id", "lost_id", "finder_user_id", "found_date", "found_location", "status"])
-
-        for item in found_items:
-            writer.writerow([
-                item.get_found_id(),
-                item.get_lost_id(),
-                item.get_finder_user_id(),
-                item.get_found_date(),
-                item.get_found_location(),
-                item.get_status()
-            ])
-
-    return True
+    return updated
 
 
 def claim_found_item(found_id, user_id):
+
     found_item = get_found_item_by_id(found_id)
 
     if found_item is None:
         return "Found Item Not Found"
 
-    lost_item = get_lost_item_by_id(found_item.get_lost_id())
+    lost_item = get_lost_item_by_id(
+        found_item.get_lost_id()
+    )
 
     if lost_item is None:
         return "Lost Item Not Found"
@@ -159,19 +271,29 @@ def claim_found_item(found_id, user_id):
     if found_item.get_status() != "FOUND":
         return "Item Is Already Returned"
 
-    update_lost_item_status(found_item.get_lost_id(), "RETURNED")
-    update_found_item_status(found_id, "RETURNED")
+    update_lost_item_status(
+        found_item.get_lost_id(),
+        "RETURNED"
+    )
+
+    update_found_item_status(
+        found_id,
+        "RETURNED"
+    )
 
     return True
 
 
 def get_contact_details(found_id, user_id):
+
     found_item = get_found_item_by_id(found_id)
 
     if found_item is None:
         return None
 
-    lost_item = get_lost_item_by_id(found_item.get_lost_id())
+    lost_item = get_lost_item_by_id(
+        found_item.get_lost_id()
+    )
 
     if lost_item is None:
         return None
@@ -180,11 +302,24 @@ def get_contact_details(found_id, user_id):
     finder_id = found_item.get_finder_user_id()
 
     if user_id == owner_id:
+
         contact_user = get_user_by_id(finder_id)
-        return {"role": "owner", "contact": contact_user}
+
+        return {
+            "role": "owner",
+            "contact": contact_user
+        }
 
     if user_id == finder_id:
-        contact_user = get_user_by_id(owner_id)
-        return {"role": "finder", "contact": contact_user}
 
-    return {"role": "other", "contact": None}
+        contact_user = get_user_by_id(owner_id)
+
+        return {
+            "role": "finder",
+            "contact": contact_user
+        }
+
+    return {
+        "role": "other",
+        "contact": None
+    }
