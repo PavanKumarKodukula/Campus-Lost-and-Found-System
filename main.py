@@ -1,6 +1,21 @@
 from services.auth_service import register_student, login, get_all_students
-from services.lost_item_service import report_lost_item, get_lost_items, display_lost_items, get_my_lost_items
-from services.found_item_service import report_found_item, get_found_items, display_found_items, get_my_found_items, get_contact_details, claim_found_item
+
+from services.lost_item_service import (
+    report_lost_item,
+    get_lost_items,
+    display_lost_items,
+    get_my_lost_items
+)
+
+from services.found_item_service import (
+    report_found_item,
+    get_found_items,
+    display_found_items,
+    get_my_found_items,
+    get_contact_details,
+    claim_found_item
+)
+
 from services.statistics_service import get_statistics
 
 
@@ -23,18 +38,33 @@ def student_menu(user):
 
         choice = input("Enter Your Choice: ")
 
+        # --------------------------------------------------
+        # 1. REPORT LOST ITEM
+        # --------------------------------------------------
+
         if choice == "1":
 
             item_name = input("Enter Item Name: ")
             category = input("Enter Category: ")
             description = input("Enter Description: ")
             location = input("Enter Lost Location: ")
-            date = input("Enter Lost Date (DD-MM-YYYY): ")
+            date = input("Enter Lost Date (YYYY-MM-DD): ")
 
-            lost_item = report_lost_item(user.get_user_id(), item_name, category, description, location, date)
+            lost_item = report_lost_item(
+                user.get_user_id(),
+                item_name,
+                category,
+                description,
+                location,
+                date
+            )
 
             print("\nLost Item Reported Successfully")
             print("Lost ID:", lost_item.get_lost_id())
+
+        # --------------------------------------------------
+        # 2. REPORT FOUND ITEM
+        # --------------------------------------------------
 
         elif choice == "2":
 
@@ -42,6 +72,7 @@ def student_menu(user):
             available_items = []
 
             for item in lost_items:
+
                 if item.get_status() == "LOST":
                     available_items.append(item)
 
@@ -56,6 +87,7 @@ def student_menu(user):
                 print("=" * 45)
 
                 for item in available_items:
+
                     print(
                         f"{item.get_lost_id()} | "
                         f"{item.get_item_name()} | "
@@ -64,31 +96,53 @@ def student_menu(user):
                     )
 
                 lost_id = input("\nEnter Lost ID: ")
-                found_date = input("Enter Found Date: ")
+                found_date = input("Enter Found Date (YYYY-MM-DD): ")
                 found_location = input("Enter Found Location: ")
 
-                result = report_found_item(lost_id, user.get_user_id(), found_date, found_location)
+                result = report_found_item(
+                    lost_id,
+                    user.get_user_id(),
+                    found_date,
+                    found_location
+                )
 
                 if isinstance(result, str):
+
                     print(result)
+
                 else:
+
                     print("\nFound Item Reported Successfully")
                     print("Found ID:", result.get_found_id())
                     print("Lost ID:", result.get_lost_id())
+
+        # --------------------------------------------------
+        # 3. VIEW LOST ITEMS
+        # --------------------------------------------------
 
         elif choice == "3":
 
             lost_items = get_lost_items()
 
             if not display_lost_items(lost_items):
+
                 print("No Lost Items Available")
+
+        # --------------------------------------------------
+        # 4. VIEW FOUND ITEMS
+        # --------------------------------------------------
 
         elif choice == "4":
 
             found_items = get_found_items()
 
             if not display_found_items(found_items):
+
                 print("No Found Items Available")
+
+        # --------------------------------------------------
+        # 5. MY REPORTS
+        # --------------------------------------------------
 
         elif choice == "5":
 
@@ -96,7 +150,9 @@ def student_menu(user):
             print("             MY LOST REPORTS")
             print("=" * 45)
 
-            my_lost_items = get_my_lost_items(user.get_user_id())
+            my_lost_items = get_my_lost_items(
+                user.get_user_id()
+            )
 
             if not my_lost_items:
 
@@ -119,7 +175,9 @@ def student_menu(user):
             print("             MY FOUND REPORTS")
             print("=" * 45)
 
-            my_found_items = get_my_found_items(user.get_user_id())
+            my_found_items = get_my_found_items(
+                user.get_user_id()
+            )
 
             if not my_found_items:
 
@@ -137,37 +195,66 @@ def student_menu(user):
                     print("Status         :", item.get_status())
                     print("-" * 45)
 
+        # --------------------------------------------------
+        # 6. LOGOUT
+        # --------------------------------------------------
+
         elif choice == "6":
 
             print("Logging out...")
             break
 
+        # --------------------------------------------------
+        # 7. CONTACT FOUND ITEM
+        # --------------------------------------------------
+
         elif choice == "7":
 
             found_id = input("Enter Found ID: ")
-            result = get_contact_details(found_id, user.get_user_id())
+
+            result = get_contact_details(
+                found_id,
+                user.get_user_id()
+            )
 
             if result is None:
+
                 print("Found Item Not Found")
 
             elif result["role"] == "other":
-                print("You are not the owner or finder of this item")
+
+                print(
+                    "You are not the owner or finder of this item"
+                )
 
             else:
+
                 contact = result["contact"]
+
                 print("Your Role:", result["role"])
                 print("Contact Name:", contact["name"])
                 print("Email:", contact["email"])
                 print("Phone:", contact["phone"])
 
+        # --------------------------------------------------
+        # 8. CLAIM FOUND ITEM
+        # --------------------------------------------------
+
         elif choice == "8":
 
             found_id = input("Enter Found ID: ")
-            result = claim_found_item(found_id, user.get_user_id())
+
+            result = claim_found_item(
+                found_id,
+                user.get_user_id()
+            )
 
             if result is True:
+
                 print("Item Claimed Successfully")
+
             else:
+
                 print(result)
 
         else:
@@ -191,11 +278,16 @@ def admin_menu(user):
 
         choice = input("Enter Your Choice: ")
 
+        # --------------------------------------------------
+        # 1. VIEW STUDENTS
+        # --------------------------------------------------
+
         if choice == "1":
 
             students = get_all_students()
 
             if not students:
+
                 print("No Students Found")
 
             else:
@@ -203,26 +295,40 @@ def admin_menu(user):
                 for student in students:
 
                     print("-" * 45)
-                    print("Student ID :", student["user_id"])
-                    print("Name       :", student["name"])
-                    print("College ID :", student["college_id"])
-                    print("Email      :", student["email"])
-                    print("Phone      :", student["phone"])
+                    print("Student ID :", student[0])
+                    print("Name       :", student[1])
+                    print("College ID :", student[2])
+                    print("Email      :", student[3])
+                    print("Phone      :", student[4])
                     print("-" * 45)
+
+        # --------------------------------------------------
+        # 2. VIEW LOST ITEMS
+        # --------------------------------------------------
 
         elif choice == "2":
 
             lost_items = get_lost_items()
 
             if not display_lost_items(lost_items):
+
                 print("No Lost Items Available")
+
+        # --------------------------------------------------
+        # 3. VIEW FOUND ITEMS
+        # --------------------------------------------------
 
         elif choice == "3":
 
             found_items = get_found_items()
 
             if not display_found_items(found_items):
+
                 print("No Found Items Available")
+
+        # --------------------------------------------------
+        # 4. VIEW STATISTICS
+        # --------------------------------------------------
 
         elif choice == "4":
 
@@ -234,12 +340,40 @@ def admin_menu(user):
 
             else:
 
-                print("Total Lost Reports :", statistics["total_lost"])
-                print("Total Found Reports:", statistics["total_found"])
-                print("Currently Lost     :", statistics["currently_lost"])
-                print("Currently Found    :", statistics["currently_found"])
-                print("Returned Items     :", statistics["returned_items"])
-                print("Return Rate        :", statistics["return_rate"], "%")
+                print(
+                    "Total Lost Reports :",
+                    statistics["total_lost"]
+                )
+
+                print(
+                    "Total Found Reports:",
+                    statistics["total_found"]
+                )
+
+                print(
+                    "Currently Lost     :",
+                    statistics["currently_lost"]
+                )
+
+                print(
+                    "Currently Found    :",
+                    statistics["currently_found"]
+                )
+
+                print(
+                    "Returned Items     :",
+                    statistics["returned_items"]
+                )
+
+                print(
+                    "Return Rate        :",
+                    statistics["return_rate"],
+                    "%"
+                )
+
+        # --------------------------------------------------
+        # 5. LOGOUT
+        # --------------------------------------------------
 
         elif choice == "5":
 
@@ -250,6 +384,10 @@ def admin_menu(user):
 
             print("Invalid Choice! Please Try Again.")
 
+
+# ==========================================================
+# MAIN PROGRAM
+# ==========================================================
 
 while True:
 
@@ -263,6 +401,10 @@ while True:
 
     choice = input("Enter Your Choice: ")
 
+    # ------------------------------------------------------
+    # 1. STUDENT REGISTRATION
+    # ------------------------------------------------------
+
     if choice == "1":
 
         name = input("Enter Name: ")
@@ -271,9 +413,16 @@ while True:
         phone = input("Enter Phone: ")
         password = input("Enter Password: ")
 
-        result = register_student(name, college_id, email, phone, password)
+        result = register_student(
+            name,
+            college_id,
+            email,
+            phone,
+            password
+        )
 
         if isinstance(result, str):
+
             print(result)
 
         else:
@@ -281,12 +430,19 @@ while True:
             print("\nRegistration Successful")
             print("Student ID:", result.get_user_id())
 
+    # ------------------------------------------------------
+    # 2. LOGIN
+    # ------------------------------------------------------
+
     elif choice == "2":
 
         email = input("Enter Email: ")
         password = input("Enter Password: ")
 
-        user = login(email, password)
+        user = login(
+            email,
+            password
+        )
 
         if user is None:
 
@@ -298,10 +454,16 @@ while True:
             print("Welcome", user.get_name())
 
             if user.get_role() == "student":
+
                 student_menu(user)
 
             elif user.get_role() == "admin":
+
                 admin_menu(user)
+
+    # ------------------------------------------------------
+    # 3. EXIT
+    # ------------------------------------------------------
 
     elif choice == "3":
 
