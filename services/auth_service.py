@@ -1,5 +1,6 @@
-import csv
-import os
+import mysql.connector as SQLC
+
+from connection import db_config
 
 from models.student import Student
 from models.admin import Admin
@@ -7,40 +8,59 @@ from models.admin import Admin
 
 def generate_student_id():
 
-    file_path = "data/users.csv"
+    query = """
+        SELECT user_id
+        FROM users
+        WHERE role = 'student'
+        ORDER BY user_id DESC
+        LIMIT 1
+    """
 
-    if not os.path.exists(file_path):
+    try:
+        cursor = db_config.cursor()
+        cursor.execute(query)
+        result = cursor.fetchone()
+        cursor.close()
+
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return None
+
+    if result is None:
         return "S101"
 
-    with open(file_path, "r", newline="") as file:
-        reader = csv.DictReader(file)
-        users = list(reader)
+    last_id = result[0]
+    number = int(last_id[1:])
 
-    student_count = 0
-
-    for user in users:
-        if user["role"] == "student":
-            student_count += 1
-
-    return f"S{101 + student_count:03d}"
+    return f"S{number + 1:03d}"
 
 
 def check_duplicate_student(college_id, email):
 
+    query = """
+        SELECT college_id, email
+        FROM users
+        WHERE college_id = %s OR email = %s
+    """
+
     try:
-        with open("data/users.csv", "r", newline="") as file:
-            reader = csv.DictReader(file)
+        cursor = db_config.cursor()
+        cursor.execute(query, (college_id, email))
+        result = cursor.fetchone()
+        cursor.close()
 
-            for user in reader:
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return "Database Error: Could Not Check Duplicate"
 
-                if user["college_id"] == college_id:
-                    return "College ID already registered"
-
-                if user["email"] == email:
-                    return "Email already registered"
-
-    except FileNotFoundError:
+    if result is None:
         return None
+
+    if result[0] == college_id:
+        return "College ID already registered"
+
+    if result[1] == email:
+        return "Email already registered"
 
     return None
 
@@ -54,6 +74,9 @@ def register_student(name, college_id, email, phone, password):
 
     user_id = generate_student_id()
 
+    if user_id is None:
+        return "Database Error: Could Not Generate Student ID"
+
     student = Student(
         user_id,
         name,
@@ -63,95 +86,139 @@ def register_student(name, college_id, email, phone, password):
         password
     )
 
-    with open("data/users.csv", "a", newline="") as file:
+    query = """
+        INSERT INTO users
+        (user_id, name, college_id, email, phone, password, role)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
 
-        writer = csv.writer(file)
+    try:
+        cursor = db_config.cursor()
 
-        writer.writerow([
-            student.get_user_id(),
-            student.get_name(),
-            student.get_college_id(),
-            student.get_email(),
-            student.get_phone(),
-            student.get_password(),
-            student.get_role()
-        ])
+        cursor.execute(
+            query,
+            (
+                student.get_user_id(),
+                student.get_name(),
+                student.get_college_id(),
+                student.get_email(),
+                student.get_phone(),
+                student.get_password(),
+                student.get_role()
+            )
+        )
+
+        db_config.commit()
+        cursor.close()
+
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return "Database Error: Could Not Register Student"
 
     return student
 
 
 def login(email, password):
 
+    query = """
+        SELECT user_id, name, college_id, email, phone, password, role
+        FROM users
+        WHERE email = %s
+    """
+
     try:
-        with open("data/users.csv", "r", newline="") as file:
+        cursor = db_config.cursor()
+        cursor.execute(query, (email,))
+        user = cursor.fetchone()
+        cursor.close()
 
-            reader = csv.DictReader(file)
-
-            for user in reader:
-
-                if user["email"] == email and user["password"] == password:
-
-                    if user["role"] == "student":
-
-                        return Student(
-                            user["user_id"],
-                            user["name"],
-                            user["college_id"],
-                            user["email"],
-                            user["phone"],
-                            user["password"]
-                        )
-
-                    elif user["role"] == "admin":
-
-                        return Admin(
-                            user["user_id"],
-                            user["name"],
-                            user["college_id"],
-                            user["email"],
-                            user["phone"],
-                            user["password"]
-                        )
-
-    except FileNotFoundError:
-
-        print("User data file not found")
+    except SQLC.Error as err:
+        print("Database Error:", err)
         return None
+
+    if user is None:
+        return None
+
+    # check password ourselves so it is compared exactly, case-sensitively
+    if user[5] != password:
+        return None
+
+    user_id = user[0]
+    name = user[1]
+    college_id = user[2]
+    email = user[3]
+    phone = user[4]
+    password = user[5]
+    role = user[6]
+
+    if role == "student":
+        return Student(
+            user_id,
+            name,
+            college_id,
+            email,
+            phone,
+            password
+        )
+
+    elif role == "admin":
+        return Admin(
+            user_id,
+            name,
+            college_id,
+            email,
+            phone,
+            password
+        )
 
     return None
 
 
 def get_user_by_id(user_id):
 
-    with open("data/users.csv", "r", newline="") as file:
+    query = """
+        SELECT user_id, name, email, phone
+        FROM users
+        WHERE user_id = %s
+    """
 
-        reader = csv.DictReader(file)
+    try:
+        cursor = db_config.cursor()
+        cursor.execute(query, (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
 
-        for user in reader:
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return None
 
-            if user["user_id"] == user_id:
+    if user is None:
+        return None
 
-                return {
-                    "user_id": user["user_id"],
-                    "name": user["name"],
-                    "email": user["email"],
-                    "phone": user["phone"]
-                }
-
-    return None
+    return {
+        "user_id": user[0],
+        "name": user[1],
+        "email": user[2],
+        "phone": user[3]
+    }
 
 
 def get_all_students():
 
-    students = []
+    query = """
+        SELECT user_id, name, college_id, email, phone
+        FROM users
+        WHERE role = 'student'
+    """
 
-    with open("data/users.csv", "r", newline="") as file:
+    try:
+        cursor = db_config.cursor()
+        cursor.execute(query)
+        students = cursor.fetchall()
+        cursor.close()
 
-        reader = csv.DictReader(file)
-
-        for user in reader:
-
-            if user["role"] == "student":
-                students.append(user)
+    except SQLC.Error as err:
+        print("Database Error:", err)
+        return []
 
     return students
