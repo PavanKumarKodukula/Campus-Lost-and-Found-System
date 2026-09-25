@@ -1,33 +1,58 @@
-import csv
+import mysql.connector as SQLC
+
+from connection import db_config
+
 
 def get_statistics():
 
     try:
-        with open("data/lost_items.csv", "r", newline="") as file:
-            lost_items = list(csv.DictReader(file))
+        cursor = db_config.cursor()
 
-        with open("data/found_items.csv", "r", newline="") as file:
-            found_items = list(csv.DictReader(file))
+        # Total lost items
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM lost_items
+        """)
+        total_lost = cursor.fetchone()[0]
 
-    except FileNotFoundError:
-        print("Required data file not found")
+        # Total found items
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM found_items
+        """)
+        total_found = cursor.fetchone()[0]
+
+        # Currently LOST
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM lost_items
+            WHERE status = 'LOST'
+        """)
+        currently_lost = cursor.fetchone()[0]
+
+        # Currently FOUND
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM lost_items
+            WHERE status = 'FOUND'
+        """)
+        currently_found = cursor.fetchone()[0]
+
+        # RETURNED items
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM lost_items
+            WHERE status = 'RETURNED'
+        """)
+        returned_items = cursor.fetchone()[0]
+
+        cursor.close()
+
+    except SQLC.Error as err:
+        print("Database Error:", err)
         return None
 
-    total_lost = len(lost_items)
-    total_found = len(found_items)
-
-    currently_lost = 0
-    currently_found = 0
-    returned_items = 0
-
-    for item in lost_items:
-        if item["status"] == "LOST":
-            currently_lost += 1
-        elif item["status"] == "FOUND":
-            currently_found += 1
-        elif item["status"] == "RETURNED":
-            returned_items += 1
-
+    # Calculate return rate
     return_rate = 0
 
     if total_found > 0:
