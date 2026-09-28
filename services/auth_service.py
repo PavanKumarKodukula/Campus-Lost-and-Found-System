@@ -17,7 +17,7 @@ def generate_student_id():
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query)
         result = cursor.fetchone()
         cursor.close()
@@ -29,8 +29,7 @@ def generate_student_id():
     if result is None:
         return "S101"
 
-    last_id = result[0]
-    number = int(last_id[1:])
+    number = int(result["user_id"][1:])
 
     return f"S{number + 1:03d}"
 
@@ -44,7 +43,7 @@ def check_duplicate_student(college_id, email):
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query, (college_id, email))
         result = cursor.fetchone()
         cursor.close()
@@ -56,10 +55,10 @@ def check_duplicate_student(college_id, email):
     if result is None:
         return None
 
-    if result[0] == college_id:
+    if result["college_id"] == college_id:
         return "College ID already registered"
 
-    if result[1] == email:
+    if result["email"] == email:
         return "Email already registered"
 
     return None
@@ -142,7 +141,7 @@ def login(email, password):
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query, (email,))
         user = cursor.fetchone()
         cursor.close()
@@ -151,40 +150,23 @@ def login(email, password):
         print("Database Error:", err)
         return None
 
-    if user is None:
+    if user is None or user["password"] != password:
         return None
 
-    # check password ourselves so it is compared exactly, case-sensitively
-    if user[5] != password:
-        return None
+    details = (
+        user["user_id"],
+        user["name"],
+        user["college_id"],
+        user["email"],
+        user["phone"],
+        user["password"]
+    )
 
-    user_id = user[0]
-    name = user[1]
-    college_id = user[2]
-    email = user[3]
-    phone = user[4]
-    password = user[5]
-    role = user[6]
+    if user["role"] == "student":
+        return Student(*details)
 
-    if role == "student":
-        return Student(
-            user_id,
-            name,
-            college_id,
-            email,
-            phone,
-            password
-        )
-
-    elif role == "admin":
-        return Admin(
-            user_id,
-            name,
-            college_id,
-            email,
-            phone,
-            password
-        )
+    if user["role"] == "admin":
+        return Admin(*details)
 
     return None
 
@@ -198,7 +180,7 @@ def get_user_by_id(user_id):
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query, (user_id,))
         user = cursor.fetchone()
         cursor.close()
@@ -207,15 +189,7 @@ def get_user_by_id(user_id):
         print("Database Error:", err)
         return None
 
-    if user is None:
-        return None
-
-    return {
-        "user_id": user[0],
-        "name": user[1],
-        "email": user[2],
-        "phone": user[3]
-    }
+    return user
 
 
 def get_all_students():
@@ -227,7 +201,7 @@ def get_all_students():
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query)
         students = cursor.fetchall()
         cursor.close()
