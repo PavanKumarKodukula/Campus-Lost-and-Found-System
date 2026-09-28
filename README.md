@@ -62,7 +62,7 @@ LOST → FOUND → RETURNED
 ## 🏗️ Project Structure
 
 ```
-Campus-Lost-and-Found-System/
+Campus_Lost_and_Found_System/
 │
 ├── models/
 │   ├── user.py          # Base User class
@@ -100,8 +100,8 @@ python --version
 
 ### 1. Clone or download the project
 ```bash
-git clone https://github.com/PavanKumarKodukula/Campus-Lost-and-Found-System.git
-cd Campus-Lost-and-Found-System
+git clone https://github.com/PavanKumarKodukula/Campus_Lost_and_Found_System.git
+cd Campus_Lost_and_Found_System
 ```
 
 ### 2. Install dependencies
@@ -116,7 +116,7 @@ Create a `.env` file in the project root (a sample is provided) with your MySQL 
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_mysql_password
-DB_NAME=Campus-Lost-and-Found-System
+DB_NAME=Campus_Lost_and_Found_System
 ```
 > ⚠️ `.env` is listed in `.gitignore` so your credentials are never committed to GitHub.
 
@@ -126,7 +126,7 @@ python main.py
 ```
 On first run, `connection.py` automatically:
 - Connects to your MySQL server
-- Creates the `Campus-Lost-and-Found-System` database if it doesn't exist
+- Creates the `Campus_Lost_and_Found_System` database if it doesn't exist
 - Creates the `users`, `lost_items`, and `found_items` tables (linked with foreign keys) if they don't exist
 - Seeds a default admin account (`A001`) if one isn't already present
 
