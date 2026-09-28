@@ -25,6 +25,7 @@ LOST → FOUND → RETURNED
 ### Student
 - Registration with automatic student ID generation
 - Duplicate College ID / email validation
+- Input validation (compulsory fields, date checks)
 - Login
 - Report lost items
 - Report found items
@@ -61,7 +62,7 @@ LOST → FOUND → RETURNED
 ## 🏗️ Project Structure
 
 ```
-campus_lost_and_found/
+Campus-Lost-and-Found-System/
 │
 ├── models/
 │   ├── user.py          # Base User class
@@ -99,8 +100,8 @@ python --version
 
 ### 1. Clone or download the project
 ```bash
-git clone <repository-url>
-cd campus_lost_and_found
+git clone https://github.com/PavanKumarKodukula/Campus-Lost-and-Found-System.git
+cd Campus-Lost-and-Found-System
 ```
 
 ### 2. Install dependencies
@@ -115,7 +116,7 @@ Create a `.env` file in the project root (a sample is provided) with your MySQL 
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_mysql_password
-DB_NAME=campus_lost_found
+DB_NAME=Campus-Lost-and-Found-System
 ```
 > ⚠️ `.env` is listed in `.gitignore` so your credentials are never committed to GitHub.
 
@@ -125,9 +126,11 @@ python main.py
 ```
 On first run, `connection.py` automatically:
 - Connects to your MySQL server
-- Creates the `campus_lost_found` database if it doesn't exist
-- Creates the `users`, `lost_items`, and `found_items` tables if they don't exist
+- Creates the `Campus-Lost-and-Found-System` database if it doesn't exist
+- Creates the `users`, `lost_items`, and `found_items` tables (linked with foreign keys) if they don't exist
 - Seeds a default admin account (`A001`) if one isn't already present
+
+If MySQL can't be reached or the setup fails, the app shows a clear message and stops.
 
 No manual table creation or CSV setup is required.
 
@@ -157,8 +160,9 @@ Password: admin@123
 - `connection.py` handles first-run setup: creating the database, creating tables, and seeding the default admin — no manual SQL scripts to run.
 - **Tables:**
   - `users` — student and admin account records
-  - `lost_items` — all reported lost items and their status
-  - `found_items` — all reported found items, linked to lost items by ID, and their status
+  - `lost_items` — all reported lost items and their status, linked to `users` by a foreign key
+  - `found_items` — all reported found items, linked to lost items and users by foreign keys, and their status
+- Reporting a found item and claiming an item update both tables together in a single transaction, so nothing is left half-saved if a step fails.
 - ⚠️ Passwords are currently stored in plain text in the `users` table; this is a known limitation (see below).
 
 ---
@@ -167,7 +171,7 @@ Password: admin@123
 
 - **Classes & Objects** — `User`, `Student`, `Admin`, `LostItem`, `FoundItem`
 - **Inheritance** — `Student(User)` and `Admin(User)`
-- **Encapsulation** — private attributes (e.g. `self.__user_id`, `self.__status`) with getters/setters
+- **Encapsulation** — private attributes (e.g. `self.__user_id`, `self.__status`) with getters
 - **Constructors** — `__init__()` initializes object state
 - **`super()`** — used by `Student` and `Admin` to call the parent `User` constructor
 
@@ -179,6 +183,8 @@ Password: admin@123
 - Console-based only; no GUI or web frontend
 - No image upload support for items
 - Query results in some admin views are accessed by column position rather than column name
+- No way to reject a wrong found report
+- No option to withdraw a lost report
 
 ## 🔮 Future Enhancements
 
