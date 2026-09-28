@@ -33,9 +33,9 @@ def student_menu(user):
         print("3. View Lost Items")
         print("4. View Found Items")
         print("5. My Reports")
-        print("6. Logout")
-        print("7. Contact Found Item")
-        print("8. Claim Found Item")
+        print("6. Contact Found Item")
+        print("7. Claim Found Item")
+        print("8. Logout")
         print("=" * 45)
 
         choice = input("Enter Your Choice: ")
@@ -217,19 +217,10 @@ def student_menu(user):
                     print("-" * 45)
 
         # --------------------------------------------------
-        # 6. LOGOUT
+        # 6. CONTACT FOUND ITEM
         # --------------------------------------------------
 
         elif choice == "6":
-
-            print("Logging out...")
-            break
-
-        # --------------------------------------------------
-        # 7. CONTACT FOUND ITEM
-        # --------------------------------------------------
-
-        elif choice == "7":
 
             found_id = input("Enter Found ID: ")
 
@@ -258,10 +249,10 @@ def student_menu(user):
                 print("Phone:", contact["phone"])
 
         # --------------------------------------------------
-        # 8. CLAIM FOUND ITEM
+        # 7. CLAIM FOUND ITEM
         # --------------------------------------------------
 
-        elif choice == "8":
+        elif choice == "7":
 
             found_id = input("Enter Found ID: ")
 
@@ -278,8 +269,16 @@ def student_menu(user):
 
                 print(result)
 
-        else:
+        # --------------------------------------------------
+        # 8. LOGOUT
+        # --------------------------------------------------
 
+        elif choice == "8":
+
+            print("Logging out...")
+            break
+        
+        else:
             print("Invalid Choice! Please Try Again.")
 
 
@@ -316,11 +315,11 @@ def admin_menu(user):
                 for student in students:
 
                     print("-" * 45)
-                    print("Student ID :", student[0])
-                    print("Name       :", student[1])
-                    print("College ID :", student[2])
-                    print("Email      :", student[3])
-                    print("Phone      :", student[4])
+                    print("Student ID :", student["user_id"])
+                    print("Name       :", student["name"])
+                    print("College ID :", student["college_id"])
+                    print("Email      :", student["email"])
+                    print("Phone      :", student["phone"])
                     print("-" * 45)
 
         # --------------------------------------------------
