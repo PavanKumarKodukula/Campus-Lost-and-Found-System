@@ -22,7 +22,7 @@ try:
     temp_cursor = temp_conn.cursor()
 
     # create the database if it is not already there
-    temp_cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_NAME}`")
+    temp_cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_NAME}")
 
     temp_cursor.close()
     temp_conn.close()
