@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import mysql.connector as SQLC
 
 from connection import db_config
@@ -6,7 +8,6 @@ from models.found_item import FoundItem
 
 from services.lost_item_service import (
     get_lost_items,
-    update_lost_item_status,
     get_lost_item_by_id
 )
 
@@ -48,6 +49,9 @@ def find_lost_item(lost_id):
 
 def report_found_item(lost_id, finder_user_id, found_date, found_location):
 
+    if found_location.strip() == "":
+        return "Found location cannot be empty"
+
     lost_item = find_lost_item(lost_id)
 
     if lost_item is None:
@@ -55,6 +59,17 @@ def report_found_item(lost_id, finder_user_id, found_date, found_location):
 
     if lost_item.get_status() != "LOST":
         return "This Item Is No Longer Available"
+
+    try:
+        found_date_value = datetime.strptime(found_date, "%Y-%m-%d").date()
+    except ValueError:
+        return "Invalid date format. Please use YYYY-MM-DD."
+
+    if found_date_value > datetime.now().date():
+        return "Found date cannot be in the future"
+
+    if found_date_value < lost_item.get_date():
+        return "Found date cannot be before the lost date"
 
     found_id = generate_found_id()
 
@@ -70,17 +85,23 @@ def report_found_item(lost_id, finder_user_id, found_date, found_location):
         "FOUND"
     )
 
-    query = """
+    insert_query = """
         INSERT INTO found_items
         (found_id, lost_id, finder_user_id, found_date, found_location, status)
         VALUES (%s, %s, %s, %s, %s, %s)
+    """
+
+    update_query = """
+        UPDATE lost_items
+        SET status = 'FOUND'
+        WHERE lost_id = %s AND status = 'LOST'
     """
 
     try:
         cursor = db_config.cursor()
 
         cursor.execute(
-            query,
+            insert_query,
             (
                 found_item.get_found_id(),
                 found_item.get_lost_id(),
@@ -91,14 +112,20 @@ def report_found_item(lost_id, finder_user_id, found_date, found_location):
             )
         )
 
+        cursor.execute(update_query, (lost_id,))
+
+        if cursor.rowcount != 1:
+            db_config.rollback()
+            cursor.close()
+            return "This Item Is No Longer Available"
+
         db_config.commit()
         cursor.close()
 
     except SQLC.Error as err:
+        db_config.rollback()
         print("Database Error:", err)
         return "Database Error: Could Not Report Found Item"
-
-    update_lost_item_status(lost_id, "FOUND")
 
     return found_item
 
@@ -271,15 +298,26 @@ def claim_found_item(found_id, user_id):
     if found_item.get_status() != "FOUND":
         return "Item Is Already Returned"
 
-    update_lost_item_status(
-        found_item.get_lost_id(),
-        "RETURNED"
-    )
+    try:
+        cursor = db_config.cursor()
 
-    update_found_item_status(
-        found_id,
-        "RETURNED"
-    )
+        cursor.execute(
+            "UPDATE lost_items SET status = 'RETURNED' WHERE lost_id = %s",
+            (found_item.get_lost_id(),)
+        )
+
+        cursor.execute(
+            "UPDATE found_items SET status = 'RETURNED' WHERE found_id = %s",
+            (found_id,)
+        )
+
+        db_config.commit()
+        cursor.close()
+
+    except SQLC.Error as err:
+        db_config.rollback()
+        print("Database Error:", err)
+        return "Database Error: Could Not Claim Item"
 
     return True
 
