@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import mysql.connector as SQLC
 
 from connection import db_config
@@ -33,6 +35,20 @@ def generate_lost_id():
 
 
 def report_lost_item(user_id, item_name, category, description, location, date):
+
+    if item_name.strip() == "":
+        return "Item name cannot be empty"
+
+    if location.strip() == "":
+        return "Location cannot be empty"
+
+    try:
+        lost_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        return "Invalid date format. Please use YYYY-MM-DD."
+
+    if lost_date > datetime.now().date():
+        return "Lost date cannot be in the future"
 
     lost_id = generate_lost_id()
 
