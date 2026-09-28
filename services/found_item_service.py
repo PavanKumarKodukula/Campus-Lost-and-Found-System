@@ -24,7 +24,7 @@ def generate_found_id():
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query)
         result = cursor.fetchone()
         cursor.close()
@@ -36,8 +36,7 @@ def generate_found_id():
     if result is None:
         return "F001"
 
-    last_id = result[0]
-    number = int(last_id[1:])
+    number = int(result["found_id"][1:])
 
     return f"F{number + 1:03d}"
 
@@ -139,7 +138,7 @@ def get_found_items():
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query)
         rows = cursor.fetchall()
         cursor.close()
@@ -148,22 +147,7 @@ def get_found_items():
         print("Database Error:", err)
         return []
 
-    found_items = []
-
-    for row in rows:
-
-        found_item = FoundItem(
-            row[0],
-            row[1],
-            row[2],
-            row[3],
-            row[4],
-            row[5]
-        )
-
-        found_items.append(found_item)
-
-    return found_items
+    return [FoundItem(**row) for row in rows]
 
 
 def display_found_items(found_items):
@@ -195,7 +179,7 @@ def get_my_found_items(user_id):
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query, (user_id,))
         rows = cursor.fetchall()
         cursor.close()
@@ -204,22 +188,7 @@ def get_my_found_items(user_id):
         print("Database Error:", err)
         return []
 
-    found_items = []
-
-    for row in rows:
-
-        found_item = FoundItem(
-            row[0],
-            row[1],
-            row[2],
-            row[3],
-            row[4],
-            row[5]
-        )
-
-        found_items.append(found_item)
-
-    return found_items
+    return [FoundItem(**row) for row in rows]
 
 
 def get_found_item_by_id(found_id):
@@ -232,7 +201,7 @@ def get_found_item_by_id(found_id):
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query, (found_id,))
         row = cursor.fetchone()
         cursor.close()
@@ -244,16 +213,7 @@ def get_found_item_by_id(found_id):
     if row is None:
         return None
 
-    found_item = FoundItem(
-        row[0],
-        row[1],
-        row[2],
-        row[3],
-        row[4],
-        row[5]
-    )
-
-    return found_item
+    return FoundItem(**row)
 
 
 def update_found_item_status(found_id, status):
