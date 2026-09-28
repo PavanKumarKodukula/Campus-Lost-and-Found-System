@@ -16,7 +16,7 @@ def generate_lost_id():
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query)
         result = cursor.fetchone()
         cursor.close()
@@ -28,8 +28,7 @@ def generate_lost_id():
     if result is None:
         return "L001"
 
-    last_id = result[0]
-    number = int(last_id[1:])
+    number = int(result["lost_id"][1:])
 
     return f"L{number + 1:03d}"
 
@@ -108,7 +107,7 @@ def get_lost_items():
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query)
         rows = cursor.fetchall()
         cursor.close()
@@ -117,24 +116,7 @@ def get_lost_items():
         print("Database Error:", err)
         return []
 
-    lost_items = []
-
-    for row in rows:
-
-        lost_item = LostItem(
-            row[0],
-            row[1],
-            row[2],
-            row[3],
-            row[4],
-            row[5],
-            row[6],
-            row[7]
-        )
-
-        lost_items.append(lost_item)
-
-    return lost_items
+    return [LostItem(**row) for row in rows]
 
 
 def update_lost_item_status(lost_id, status):
@@ -189,7 +171,7 @@ def get_my_lost_items(user_id):
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query, (user_id,))
         rows = cursor.fetchall()
         cursor.close()
@@ -198,24 +180,7 @@ def get_my_lost_items(user_id):
         print("Database Error:", err)
         return []
 
-    lost_items = []
-
-    for row in rows:
-
-        lost_item = LostItem(
-            row[0],
-            row[1],
-            row[2],
-            row[3],
-            row[4],
-            row[5],
-            row[6],
-            row[7]
-        )
-
-        lost_items.append(lost_item)
-
-    return lost_items
+    return [LostItem(**row) for row in rows]
 
 
 def get_lost_item_by_id(lost_id):
@@ -228,7 +193,7 @@ def get_lost_item_by_id(lost_id):
     """
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
         cursor.execute(query, (lost_id,))
         row = cursor.fetchone()
         cursor.close()
@@ -240,15 +205,4 @@ def get_lost_item_by_id(lost_id):
     if row is None:
         return None
 
-    lost_item = LostItem(
-        row[0],
-        row[1],
-        row[2],
-        row[3],
-        row[4],
-        row[5],
-        row[6],
-        row[7]
-    )
-
-    return lost_item
+    return LostItem(**row)
