@@ -6,45 +6,22 @@ from connection import db_config
 def get_statistics():
 
     try:
-        cursor = db_config.cursor()
+        cursor = db_config.cursor(dictionary=True)
 
-        # Total lost items
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM lost_items
-        """)
-        total_lost = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) AS total FROM lost_items")
+        total_lost = cursor.fetchone()["total"]
 
-        # Total found items
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM found_items
-        """)
-        total_found = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) AS total FROM found_items")
+        total_found = cursor.fetchone()["total"]
 
-        # Currently LOST
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM lost_items
-            WHERE status = 'LOST'
-        """)
-        currently_lost = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) AS total FROM lost_items WHERE status = 'LOST'")
+        currently_lost = cursor.fetchone()["total"]
 
-        # Currently FOUND
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM lost_items
-            WHERE status = 'FOUND'
-        """)
-        currently_found = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) AS total FROM lost_items WHERE status = 'FOUND'")
+        currently_found = cursor.fetchone()["total"]
 
-        # RETURNED items
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM lost_items
-            WHERE status = 'RETURNED'
-        """)
-        returned_items = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) AS total FROM lost_items WHERE status = 'RETURNED'")
+        returned_items = cursor.fetchone()["total"]
 
         cursor.close()
 
@@ -52,7 +29,6 @@ def get_statistics():
         print("Database Error:", err)
         return None
 
-    # Calculate return rate
     return_rate = 0
 
     if total_found > 0:
