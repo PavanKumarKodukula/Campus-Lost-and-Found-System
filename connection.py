@@ -1,3 +1,4 @@
+import sys
 import mysql.connector as SQLC
 from dotenv import load_dotenv
 import os
@@ -21,7 +22,7 @@ try:
     temp_cursor = temp_conn.cursor()
 
     # create the database if it is not already there
-    temp_cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_NAME}")
+    temp_cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_NAME}`")
 
     temp_cursor.close()
     temp_conn.close()
@@ -35,8 +36,14 @@ try:
         database=DB_NAME
     )
 
-    print("Database connected successfully!")
+except SQLC.Error as err:
+    print("Could not connect to MySQL. Check your .env file and make sure MySQL is running.")
+    print("Reason:", err)
+    sys.exit(1)
 
+print("Database connected successfully!")
+
+try:
     cursor = db_config.cursor()
 
     # step 3: create tables if they are not already there
@@ -62,7 +69,8 @@ try:
             description TEXT,
             location VARCHAR(100),
             date DATE,
-            status VARCHAR(20)
+            status VARCHAR(20),
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
         )
     """)
 
@@ -73,7 +81,9 @@ try:
             finder_user_id VARCHAR(10),
             found_date DATE,
             found_location VARCHAR(100),
-            status VARCHAR(20)
+            status VARCHAR(20),
+            FOREIGN KEY (lost_id) REFERENCES lost_items(lost_id),
+            FOREIGN KEY (finder_user_id) REFERENCES users(user_id)
         )
     """)
 
@@ -101,5 +111,5 @@ try:
     cursor.close()
 
 except SQLC.Error as err:
-    print("Database Connection Failed:", err)
-    db_config = None
+    print("Database setup failed:", err)
+    sys.exit(1)
