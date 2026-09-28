@@ -182,7 +182,6 @@ Password: admin@123
 - Passwords stored in plain text (not hashed)
 - Console-based only; no GUI or web frontend
 - No image upload support for items
-- Query results in some admin views are accessed by column position rather than column name
 - No way to reject a wrong found report
 - No option to withdraw a lost report
 
