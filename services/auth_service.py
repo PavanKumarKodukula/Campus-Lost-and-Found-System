@@ -67,6 +67,21 @@ def check_duplicate_student(college_id, email):
 
 def register_student(name, college_id, email, phone, password):
 
+    if name.strip() == "":
+        return "Name cannot be empty"
+
+    if college_id.strip() == "":
+        return "College ID cannot be empty"
+
+    if email.strip() == "":
+        return "Email cannot be empty"
+
+    if phone.strip() == "":
+        return "Phone number cannot be empty"
+
+    if password.strip() == "":
+        return "Password cannot be empty"
+
     duplicate = check_duplicate_student(college_id, email)
 
     if duplicate is not None:
